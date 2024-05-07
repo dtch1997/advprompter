@@ -1,0 +1,46 @@
+[project]
+name = "advprompter"
+version = "0.1.0"
+description = "A template for python projects in PDM"
+authors = [
+    {name = "Daniel Tan", email = "dtch1997@users.noreply.github.com"},
+    {name = "Daniel CH Tan", email = "dtch1997@users.noreply.github.com"},
+]
+dependencies = [
+    "torch>=2.3.0",
+    "transformer-lens>=1.17.0",
+    "sae-lens>=1.6.0",
+    "jaxtyping>=0.2.28",
+    "dreamy @ git+https://github.com/Confirm-Solutions/dreamy",
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+test = [
+    "ruff>=0.4.3",
+    "pytest>=8.2.0",
+    "pyright>=1.1.361",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pdm]
+distribution = true
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
+[tool.semantic_release]
+version_variables = [
+    "advprompter/__init__.py:__version__",
+    "pyproject.toml:version",
+]
+branch = "main"
+
+[tool.hatch.metadata]
+allow-direct-references = true
