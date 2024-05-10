@@ -179,6 +179,7 @@ demo = gradio.Interface(
     ]
 )
 
-demo.launch(share=True)
+if __name__ == "__main__":
+    demo.launch(share=True)
 
 
