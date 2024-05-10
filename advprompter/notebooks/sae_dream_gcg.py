@@ -45,15 +45,46 @@ sparse_autoencoder.cfg.device = device
 
 # %%
 
+import torch.nn.functional as F
 
-def neuron_runner(layer, neuron):
+# https://iquilezles.org/articles/smin/
+def smin(xs, dim=-1, scale = 0.01):
+    if xs.shape[-1] == 1:
+        return xs[..., 0]
+    assert dim == -1
+    # relu and norm
+    return F.relu(xs + 10).norm(dim=dim, p=0.1) * scale
+    return xs.min(dim=dim).values
+    k = 0.5
+    assert xs.shape[-1] == 2
+    h = torch.nn.functional.relu( k - torch.abs(xs[..., 0] - xs[..., 1])) / k
+    return torch.minimum(xs[..., 0], xs[..., 1]) - h*h*k*(1.0/4.0)
+    # k = 1.0/(1.0-(0.5**0.5));
+    # a, b = xs[..., 0], xs[..., 1]
+    # return torch.maximum(k, torch.minimum(a,b)) -
+            # length(max(k-vec2(a,b),0.0));
+
+# %% 
+
+neurons = (234, 17165)
+
+def neuron_runner(layer: int,
+                  neurons: list[int]
+                #   neurons: list[tuple[int, int]]
+                  ):
     def f(*model_args, **model_kwargs):
         out = {}
 
         def get_target(module, input, output):
             hidden_pre = sparse_autoencoder._encode_with_hidden_pre(
                 input[0])[1]
-            out["target"] = hidden_pre[..., neuron][:, -1:].mean(dim=-1)
+            
+            all_acts = hidden_pre[..., neurons][:, -1:]
+            # positions, indices = zip(*neurons)
+            # all_acts = hidden_pre[..., positions, indices]
+            # print(all_acts.shape)
+            # TODO: replace min with soft min? 
+            out["target"] = smin(all_acts, dim = -1, scale = 0.001).mean(dim=-1)
 
         with add_fwd_hooks(
             [
@@ -90,18 +121,29 @@ def neuron_runner(layer, neuron):
         return out
 
     return f
-# %%
-# | output: false
-runner = neuron_runner(layer=layer, neuron=234)
+runner = neuron_runner(layer=layer, neurons = neurons)
 history = epo(
-    runner, model, tokenizer, seed=1001,
-    restart_xentropy = 0.5, restart_xentropy_max_mult = 3.0,
+    runner, model, tokenizer, 
+    seed=1001,
+    iters = 10, # 1000,
+    restart_xentropy = 0.5, 
+    restart_xentropy_max_mult = 3.0,
     x_penalty_max=100,
     x_penalty_min=0.1,
 )
 
+# %% 
+# for key in vars(history):
+#     print(key)
+print(history.target.shape)
+tokenizer.batch_decode(history.ids[-1])
 # %%
 pareto = build_pareto_frontier(tokenizer, history)
+vars(pareto).keys()
+pareto.text
+# %%
+pareto = build_pareto_frontier(tokenizer, history)
+print(pareto)
 
 ordering = np.argsort(pareto.xentropy)
 plt.scatter(pareto.xentropy, pareto.target, c='k', label='Pareto frontier')
