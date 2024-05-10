@@ -170,7 +170,7 @@ demo = gradio.Interface(
     inputs=[
         gradio.Number(label="layer", minimum=0, maximum=12, value=10),
         gradio.Textbox(label="neurons", value="17165"),
-        gradio.Slider(10, 1000, label="iters", step=10)
+        gradio.Slider(10, 1000, label="iters", step=10, value=1000)
     ],
     outputs=[
         gradio.Plot(label="Pareto Frontier Plot"),
